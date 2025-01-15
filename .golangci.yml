@@ -1,0 +1,12 @@
+linters:
+  # Enable all available linters.
+  # Default: false
+  enable-all: true
+
+  # Enable only fast linters from enabled linters set (first run won't be fast)
+  # Default: false
+  fast: false
+
+  disable:
+    - depguard
+    - exportloopref
