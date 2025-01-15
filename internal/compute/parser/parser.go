@@ -3,7 +3,6 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 )
@@ -26,10 +25,6 @@ type Command struct {
 
 func (c *Command) String() string {
 	return fmt.Sprintf("Type: %s, %s=%s", c.Type, c.Key, c.Value)
-}
-
-func (c *Command) Execute() {
-	slog.Info("Executing command", slog.String("command", c.String()))
 }
 
 var (

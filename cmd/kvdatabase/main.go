@@ -8,16 +8,15 @@ import (
 
 	"github.com/pingvincible/kvdatabase/internal/compute/parser"
 	"github.com/pingvincible/kvdatabase/internal/logger"
+	"github.com/pingvincible/kvdatabase/internal/storage/engine"
 )
 
 func main() {
-	// Create parser.
-	// Create engine.
-	// Create interactive shell.
 	logger.Configure(slog.LevelDebug)
 	slog.Info("Database started")
 
 	scanner := bufio.NewScanner(os.Stdin)
+	kvEngine := engine.New()
 
 	for {
 		fmt.Printf("> ")
@@ -31,6 +30,17 @@ func main() {
 			continue
 		}
 
-		command.Execute()
+		Execute(kvEngine, command)
+	}
+}
+
+func Execute(kvEngine *engine.Engine, command parser.Command) {
+	switch command.Type {
+	case parser.CommandSet:
+		kvEngine.Set(command.Key, command.Value)
+	case parser.CommandGet:
+		fmt.Println(kvEngine.Get(command.Key))
+	case parser.CommandDel:
+		kvEngine.Delete(command.Key)
 	}
 }
