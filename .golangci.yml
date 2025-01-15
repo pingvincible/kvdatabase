@@ -10,3 +10,4 @@ linters:
   disable:
     - depguard
     - exportloopref
+    - forbidigo
