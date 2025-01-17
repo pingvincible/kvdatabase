@@ -39,9 +39,6 @@ func Parse(command string) (Command, error) {
 	}
 
 	args := strings.Split(command, ` `)
-	if len(args) == 1 {
-		return Command{}, ErrNotEnoughArguments
-	}
 
 	switch args[0] {
 	case string(CommandSet):
