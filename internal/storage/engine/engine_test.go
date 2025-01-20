@@ -20,14 +20,19 @@ func TestEngineMethods(t *testing.T) {
 		},
 	}
 
+	t.Parallel()
+
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+		testCase := tc
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			kvDatabase := engine.New()
-			kvDatabase.Set(tc.key, tc.value)
-			value := kvDatabase.Get(tc.key)
-			assert.Equal(t, tc.value, value)
-			kvDatabase.Delete(tc.key)
-			value = kvDatabase.Get(tc.key)
+			kvDatabase.Set(testCase.key, testCase.value)
+			value := kvDatabase.Get(testCase.key)
+			assert.Equal(t, testCase.value, value)
+			kvDatabase.Delete(testCase.key)
+			value = kvDatabase.Get(testCase.key)
 			assert.Empty(t, value)
 		})
 	}

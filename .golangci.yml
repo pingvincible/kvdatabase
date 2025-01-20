@@ -11,3 +11,4 @@ linters:
     - depguard
     - exportloopref
     - forbidigo
+    - exhaustruct

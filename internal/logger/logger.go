@@ -7,7 +7,7 @@ import (
 
 func Configure(level slog.Level) {
 	logLevel := &slog.LevelVar{}
-	opts := &slog.HandlerOptions{ //nolint:exhaustruct
+	opts := &slog.HandlerOptions{
 		AddSource: false,
 		Level:     logLevel,
 	}

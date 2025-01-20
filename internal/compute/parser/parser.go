@@ -2,110 +2,65 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 )
 
-type CommandType string
-
-const (
-	CommandSet CommandType = "SET"
-	CommandGet CommandType = "GET"
-	CommandDel CommandType = "DEL"
-
-	CommandSetArgsNumber = 2
-)
-
-type Command struct {
-	Type  CommandType
-	Key   string
-	Value string
-}
-
-func (c *Command) String() string {
-	return fmt.Sprintf("Type: %s, %s=%s", c.Type, c.Key, c.Value)
-}
-
 var (
-	ErrUnknownCommand     = errors.New("unknown command")
+	ErrInvalidCommand     = errors.New("invalid command")
 	ErrNotEnoughArguments = errors.New("not enough arguments")
 	ErrInvalidArgument    = errors.New("invalid argument")
 )
 
-func Parse(command string) (Command, error) {
-	if len(command) == 0 {
-		return Command{}, ErrUnknownCommand
-	}
-
-	args := strings.Split(command, ` `)
-
-	switch args[0] {
-	case string(CommandSet):
-		return parseCommandSet(args[1:])
-	case string(CommandGet):
-		return parseCommandGet(args[1:])
-	case string(CommandDel):
-		return parseCommandDel(args[1:])
-	default:
-		return Command{}, ErrUnknownCommand
-	}
-}
-
-func parseCommandSet(args []string) (Command, error) {
-	if len(args) < CommandSetArgsNumber {
-		return Command{}, ErrNotEnoughArguments
-	}
-
-	err := validate(args)
+func Parse(commandText string) (Command, error) {
+	commandType, validatedArgs, err := validate(commandText)
 	if err != nil {
 		return Command{}, err
 	}
 
-	return Command{
-		Type:  CommandSet,
-		Key:   args[0],
-		Value: args[1],
-	}, nil
+	command := Command{Type: commandType, Key: validatedArgs[0]}
+	if commandType == CommandSet {
+		command.Value = validatedArgs[1]
+	}
+
+	return command, nil
 }
 
-func parseCommandGet(args []string) (Command, error) {
+func validate(commandText string) (CommandType, []string, error) {
+	args := strings.Fields(commandText)
 	if len(args) == 0 {
-		return Command{}, ErrNotEnoughArguments
+		return "", nil, ErrInvalidCommand
 	}
 
-	err := validate(args)
+	commandType, argsCount, err := validateCommand(CommandType(args[0]))
 	if err != nil {
-		return Command{}, err
+		return "", nil, err
 	}
 
-	return Command{
-		Type:  CommandGet,
-		Key:   args[0],
-		Value: "",
-	}, nil
+	err = validateArgs(args[1:], argsCount)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return commandType, args[1:], nil
 }
 
-func parseCommandDel(args []string) (Command, error) {
-	if len(args) == 0 {
-		return Command{}, ErrNotEnoughArguments
+func validateCommand(commandType CommandType) (CommandType, int, error) {
+	argsCount, ok := ArgsInCommand()[commandType]
+	if !ok {
+		return "", 0, ErrInvalidCommand
 	}
 
-	err := validate(args)
-	if err != nil {
-		return Command{}, err
-	}
-
-	return Command{
-		Type:  CommandDel,
-		Key:   args[0],
-		Value: "",
-	}, nil
+	return commandType, argsCount, nil
 }
 
-func validate(args []string) error {
+func validateArgs(args []string, argsCount int) error {
+	if len(args) < argsCount {
+		return ErrNotEnoughArguments
+	}
+
 	for _, arg := range args {
-		err := validateArgument(arg)
+		err := validateArg(arg)
 		if err != nil {
 			return err
 		}
@@ -114,7 +69,7 @@ func validate(args []string) error {
 	return nil
 }
 
-func validateArgument(arg string) error {
+func validateArg(arg string) error {
 	r := regexp.MustCompile("^[a-zA-Z0-9_/*]+$")
 
 	matched := r.MatchString(arg)

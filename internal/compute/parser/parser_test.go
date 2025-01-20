@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
+func TestParse(t *testing.T) { //nolint: funlen // test code
 	cases := []struct {
 		name        string
 		text        string
@@ -18,19 +18,19 @@ func TestParse(t *testing.T) {
 			name:        "empty command text",
 			text:        "",
 			wantCommand: parser.Command{},
-			wantError:   parser.ErrUnknownCommand,
+			wantError:   parser.ErrInvalidCommand,
 		},
 		{
 			name:        "Incorrect command name",
 			text:        "INVALID",
 			wantCommand: parser.Command{},
-			wantError:   parser.ErrUnknownCommand,
+			wantError:   parser.ErrInvalidCommand,
 		},
 		{
 			name:        "command name not in upper register",
 			text:        "set",
 			wantCommand: parser.Command{},
-			wantError:   parser.ErrUnknownCommand,
+			wantError:   parser.ErrInvalidCommand,
 		},
 		{
 			name: "SET correct command",
@@ -68,7 +68,7 @@ func TestParse(t *testing.T) {
 			name:        "SET command with empty arguments",
 			text:        "SET   ",
 			wantCommand: parser.Command{},
-			wantError:   parser.ErrInvalidArgument,
+			wantError:   parser.ErrNotEnoughArguments,
 		},
 		{
 			name:        "SET command with invalid key",
@@ -102,7 +102,7 @@ func TestParse(t *testing.T) {
 			name:        "GET command with empty arguments",
 			text:        "GET ",
 			wantCommand: parser.Command{},
-			wantError:   parser.ErrInvalidArgument,
+			wantError:   parser.ErrNotEnoughArguments,
 		},
 		{
 			name:        "GET command with invalid key",
@@ -130,7 +130,7 @@ func TestParse(t *testing.T) {
 			name:        "DEL command with empty arguments",
 			text:        "DEL ",
 			wantCommand: parser.Command{},
-			wantError:   parser.ErrInvalidArgument,
+			wantError:   parser.ErrNotEnoughArguments,
 		},
 		{
 			name:        "DEL command with invalid key",
@@ -140,11 +140,16 @@ func TestParse(t *testing.T) {
 		},
 	}
 
+	t.Parallel()
+
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			command, err := parser.Parse(tc.text)
-			assert.Equal(t, tc.wantCommand, command)
-			assert.Equal(t, tc.wantError, err)
+		testCase := tc
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			command, err := parser.Parse(testCase.text)
+			assert.Equal(t, testCase.wantCommand, command)
+			assert.Equal(t, testCase.wantError, err)
 		})
 	}
 }
