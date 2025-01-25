@@ -12,3 +12,5 @@ linters:
     - exportloopref
     - forbidigo
     - exhaustruct
+    - godox
+    - funlen
