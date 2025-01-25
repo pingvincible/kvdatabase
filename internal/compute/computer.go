@@ -20,7 +20,7 @@ func NewComputer(storage StorageInterface) *Computer {
 	return &Computer{storage: storage}
 }
 
-func (c *Computer) Compute(command parser.Command) string {
+func (c *Computer) compute(command parser.Command) string {
 	result := ""
 
 	switch command.Type {
@@ -41,5 +41,5 @@ func (c *Computer) Process(text string) (string, error) {
 		return "", fmt.Errorf("failed to parse command: %w", err)
 	}
 
-	return c.Compute(command), nil
+	return c.compute(command), nil
 }

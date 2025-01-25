@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -16,7 +14,10 @@ func main() {
 	logger.Configure(slog.LevelDebug)
 	slog.Info("KV database started")
 
-	server, err := tcp.NewServer(":1234")
+	kvEngine := engine.New()
+	computer := compute.NewComputer(kvEngine)
+
+	server, err := tcp.NewServer(":1234", computer)
 	if err != nil {
 		slog.Error(
 			"failed to start server",
@@ -25,32 +26,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	kvEngine := engine.New()
-	computer := compute.NewComputer(kvEngine)
-
 	server.Start()
-
-	Run(computer)
-}
-
-func Run(computer *compute.Computer) {
-	scanner := bufio.NewScanner(os.Stdin)
-
-	for {
-		fmt.Printf("> ")
-		scanner.Scan()
-
-		text := scanner.Text()
-
-		result, err := computer.Process(text)
-		if err != nil {
-			fmt.Println(err)
-
-			continue
-		}
-
-		if len(result) > 0 {
-			fmt.Println(result)
-		}
-	}
 }

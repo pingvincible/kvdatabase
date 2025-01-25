@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+
+	"github.com/pingvincible/kvdatabase/internal/compute"
 )
 
 type Server struct {
-	addr   string
-	listen net.Listener
+	addr     string
+	listen   net.Listener
+	computer *compute.Computer
 }
 
-func NewServer(addr string) (*Server, error) {
+func NewServer(addr string, computer *compute.Computer) (*Server, error) {
 	server := Server{
-		addr: addr,
+		addr:     addr,
+		computer: computer,
 	}
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -36,7 +40,6 @@ func (s *Server) Start() {
 	for {
 		conn, err := s.listen.Accept()
 		if err != nil {
-			// TODO think what to do: stop server or try to accept another connection?
 			slog.Error(
 				"failed to accept connection",
 				slog.String("error", err.Error()),
@@ -60,6 +63,16 @@ func (s *Server) Stop() error {
 }
 
 func (s *Server) handleClient(conn net.Conn) {
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			slog.Error(
+				"failed to close client connection",
+				slog.String("error", err.Error()),
+			)
+		}
+	}()
+
 	for {
 		netData, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
@@ -71,12 +84,24 @@ func (s *Server) handleClient(conn net.Conn) {
 			return
 		}
 
-		fmt.Print("-> ", netData)
+		slog.Info(
+			"received data from client",
+			slog.String("data", netData),
+		)
 
-		_, err = conn.Write([]byte(netData))
+		result, err := s.computer.Process(netData)
 		if err != nil {
 			slog.Error(
-				"failed to send data to tcp client",
+				"failed to process client query",
+				slog.String("error", err.Error()),
+			)
+			_, err = conn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		}
+
+		_, err = conn.Write([]byte(fmt.Sprintf("%s\n", result)))
+		if err != nil {
+			slog.Error(
+				"failed to send data to client",
 				slog.String("error", err.Error()),
 			)
 
