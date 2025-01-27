@@ -36,6 +36,14 @@ func NewServer(addr string, computer *compute.Computer) (*Server, error) {
 	return &server, nil
 }
 
+func (s *Server) Addr() (string, error) {
+	if s.listen == nil {
+		return "", fmt.Errorf("tcp server is not listening")
+	}
+
+	return s.listen.Addr().String(), nil
+}
+
 func (s *Server) Start() {
 	for {
 		conn, err := s.listen.Accept()
