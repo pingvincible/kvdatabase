@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func Configure(level slog.Level) {
+func Configure(level string) {
 	logLevel := &slog.LevelVar{}
 	opts := &slog.HandlerOptions{
 		AddSource: false,
@@ -13,5 +13,15 @@ func Configure(level slog.Level) {
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
-	logLevel.Set(level)
+
+	switch level {
+	case "debug":
+		logLevel.Set(slog.LevelDebug)
+	case "info":
+		logLevel.Set(slog.LevelInfo)
+	case "error":
+		logLevel.Set(slog.LevelError)
+	default:
+		logLevel.Set(slog.LevelInfo)
+	}
 }

@@ -12,12 +12,12 @@ import (
 )
 
 func main() {
-	logger.Configure(slog.LevelDebug)
+	logger.Configure("debug")
 	slog.Info("KV CLI started")
 
 	var addr string
 
-	flag.StringVar(&addr, "hostname", "localhost:1234", "address to connect to")
+	flag.StringVar(&addr, "hostname", "localhost:3223", "address to connect to")
 	flag.Parse()
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
