@@ -73,6 +73,7 @@ func TestConfigInvalidConfigFile(t *testing.T) {
 				if err != nil {
 					t.Fatal("failed to close config file, %w", err)
 				}
+
 				err = os.Remove(configFile.Name())
 				if err != nil {
 					t.Fatal("failed to remove config file, %w", err)
@@ -170,6 +171,7 @@ logging:
 			wantOutput:         "./kvdatabase.log",
 		},
 	}
+
 	t.Parallel()
 
 	for _, tc := range testCases {
@@ -179,7 +181,6 @@ logging:
 			t.Parallel()
 
 			configFile, err := prepareConfigFile(testCase.configFileBody)
-
 			if err != nil {
 				t.Fatal("failed to prepare config file, %w", err)
 			}
@@ -225,7 +226,6 @@ logging:
 	t.Parallel()
 
 	configFile, err := prepareConfigFile(configFileBody)
-
 	if err != nil {
 		t.Fatal("failed to prepare config file, %w", err)
 	}

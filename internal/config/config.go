@@ -28,9 +28,9 @@ type EngineConfig struct {
 }
 
 type NetworkConfig struct {
-	Address        string        `yaml:"address" env:"ADDRESS" env-default:"127.0.0.1:3223" env-description:"address to listen"`
-	MaxConnections int           `yaml:"maxConnections" env:"MAX_CONNECTIONS" env-default:"100" env-description:"max client connections"`
-	MaxMessageSize string        `yaml:"maxMessageSize" env:"MAX_MESSAGE_SIZE" env-default:"4KB" env-description:"max message size"`
+	Address        string        `yaml:"address" env:"ADDRESS" env-default:"127.0.0.1:3223" env-description:"address to listen"`          //nolint: lll
+	MaxConnections int           `yaml:"maxConnections" env:"MAX_CONNECTIONS" env-default:"100" env-description:"max client connections"` //nolint: lll
+	MaxMessageSize string        `yaml:"maxMessageSize" env:"MAX_MESSAGE_SIZE" env-default:"4KB" env-description:"max message size"`      //nolint: lll
 	IdleTimeout    time.Duration `yaml:"idleTimeout" env:"IDLE_TIMEOUT" env-default:"5m" env-description:"idle timeout"`
 }
 

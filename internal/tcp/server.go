@@ -2,12 +2,15 @@ package tcp
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 
 	"github.com/pingvincible/kvdatabase/internal/compute"
 )
+
+var ErrServerIsNotListening = errors.New("server is not listening")
 
 type Server struct {
 	addr     string
@@ -38,7 +41,7 @@ func NewServer(addr string, computer *compute.Computer) (*Server, error) {
 
 func (s *Server) Addr() (string, error) {
 	if s.listen == nil {
-		return "", fmt.Errorf("tcp server is not listening")
+		return "", ErrServerIsNotListening
 	}
 
 	return s.listen.Addr().String(), nil

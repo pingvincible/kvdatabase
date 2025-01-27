@@ -46,6 +46,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 	}
+
 	slog.Info("tcp server started", slog.String("address", addr))
 
 	server.Start()
