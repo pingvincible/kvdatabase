@@ -95,10 +95,19 @@ func (s *Server) handleClient(conn net.Conn) {
 				"failed to process client query",
 				slog.String("error", err.Error()),
 			)
+
 			_, err = conn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+			if err != nil {
+				slog.Error(
+					"failed to send data to client",
+					slog.String("error", err.Error()),
+				)
+
+				return
+			}
 		}
 
-		_, err = conn.Write([]byte(fmt.Sprintf("%s\n", result)))
+		_, err = conn.Write([]byte(result + "\n"))
 		if err != nil {
 			slog.Error(
 				"failed to send data to client",

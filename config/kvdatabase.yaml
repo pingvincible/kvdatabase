@@ -2,9 +2,9 @@ engine:
   type: "in_memory"
 network:
   address: "127.0.0.1:3223"
-  max_connections: 100
-  max_message_size: "4KB"
-  idle_timeout: 5m
+  maxConnections: 100
+  maxMessageSize: "4KB"
+  idleTimeout: 5m
 logging:
   level: "info"
   output: "./kvdatabase.log"

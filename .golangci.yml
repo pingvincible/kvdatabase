@@ -14,3 +14,15 @@ linters:
     - exhaustruct
     - godox
     - funlen
+linters-settings:
+  tagalign:
+    align: false
+    sort: false
+    order:
+      - json
+      - yaml
+      - yml
+      - toml
+      - mapstructure
+      - binding
+      - validate

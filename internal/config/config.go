@@ -19,9 +19,9 @@ type EngineConfig struct {
 
 type NetworkConfig struct {
 	Address        string        `yaml:"address" env-default:"127.0.0.1:3223"`
-	MaxConnections int           `yaml:"max_connections" env-default:"100"`
-	MaxMessageSize string        `yaml:"max_message_size" env-default:"4KB"`
-	IdleTimeout    time.Duration `yaml:"idle_timeout" env-default:"5m"`
+	MaxConnections int           `yaml:"maxConnections" env-default:"100"`
+	MaxMessageSize string        `yaml:"maxMessageSize" env-default:"4KB"`
+	IdleTimeout    time.Duration `yaml:"idleTimeout" env-default:"5m"`
 }
 
 type LogConfig struct {

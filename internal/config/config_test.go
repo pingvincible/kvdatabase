@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -49,7 +50,6 @@ func TestConfigNegative(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range testCases {
-
 		testCase := tc
 
 		t.Run(testCase.name, func(t *testing.T) {
@@ -57,10 +57,11 @@ func TestConfigNegative(t *testing.T) {
 
 			var configPath string
 
-			configFile, err := os.CreateTemp("", "kvdatabase*.yaml")
+			configFile, err := os.CreateTemp(t.TempDir(), "kvdatabase*.yaml")
 			if err != nil {
 				t.Fatal("failed to create temporary config file, %w", err)
 			}
+
 			defer func() { _ = os.Remove(configFile.Name()) }()
 
 			if testCase.configPathIsSet {
@@ -74,7 +75,7 @@ func TestConfigNegative(t *testing.T) {
 				}
 			}
 
-			if _, err = configFile.Write([]byte(testCase.configFileBody)); err != nil {
+			if _, err = configFile.WriteString(testCase.configFileBody); err != nil {
 				t.Fatal("failed to write to temporary config file:", err)
 			}
 
@@ -96,14 +97,14 @@ func TestConfigNegative(t *testing.T) {
 func prepareConfigFile(configFileBody string) (*os.File, error) {
 	configFile, err := os.CreateTemp("", "kvdatabase*.yaml")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create temp config file: %w", err)
 	}
 
-	if _, err = configFile.Write([]byte(configFileBody)); err != nil {
-		return nil, err
+	if _, err = configFile.WriteString(configFileBody); err != nil {
+		return nil, fmt.Errorf("failed to write data to temp config file: %w", err)
 	}
 
-	return configFile, err
+	return configFile, nil
 }
 
 func TestConfigFillAllValuesFromFile(t *testing.T) {
@@ -111,12 +112,12 @@ func TestConfigFillAllValuesFromFile(t *testing.T) {
 
 	configFileBody := `
 engine:
-  type: "other_type"
+  type: "other-type"
 network:
   address: "127.0.0.1:3225"
-  max_connections: 1000
-  max_message_size: "10KB"
-  idle_timeout: 50m
+  maxConnections: 1000
+  maxMessageSize: "10KB"
+  idleTimeout: 50m
 logging:
   level: "debug"
   output: "./debug.log"`
@@ -132,14 +133,13 @@ logging:
 
 	require.NoError(t, err)
 
-	assert.Equal(t, "other_type", cfg.Engine.Type)
+	assert.Equal(t, "other-type", cfg.Engine.Type)
 	assert.Equal(t, "127.0.0.1:3225", cfg.Network.Address)
 	assert.Equal(t, 1000, cfg.Network.MaxConnections)
 	assert.Equal(t, "10KB", cfg.Network.MaxMessageSize)
 	assert.Equal(t, 50*time.Minute, cfg.Network.IdleTimeout)
 	assert.Equal(t, "debug", cfg.Logging.Level)
 	assert.Equal(t, "./debug.log", cfg.Logging.Output)
-
 }
 
 func TestConfigFillAbsentSectionWithDefaultValues(t *testing.T) {
@@ -147,7 +147,7 @@ func TestConfigFillAbsentSectionWithDefaultValues(t *testing.T) {
 
 	configFileBody := `
 engine:
-  type: "other_type"
+  type: "other-type"
 logging:
   level: "debug"
   output: "./debug.log"`
@@ -163,7 +163,7 @@ logging:
 
 	require.NoError(t, err)
 
-	assert.Equal(t, "other_type", cfg.Engine.Type)
+	assert.Equal(t, "other-type", cfg.Engine.Type)
 	assert.Equal(t, "127.0.0.1:3223", cfg.Network.Address)
 	assert.Equal(t, 100, cfg.Network.MaxConnections)
 	assert.Equal(t, "4KB", cfg.Network.MaxMessageSize)
@@ -179,7 +179,7 @@ func TestConfigFillAbsentKeysWithDefaultValues(t *testing.T) {
 engine:
 network:
   address: "127.0.0.1:3225"
-  idle_timeout: 50m
+  idleTimeout: 50m
 logging:
   level: "debug"`
 
