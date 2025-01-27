@@ -8,35 +8,33 @@ import (
 	"net"
 
 	"github.com/pingvincible/kvdatabase/internal/compute"
+	"github.com/pingvincible/kvdatabase/internal/config"
 )
 
 var ErrServerIsNotListening = errors.New("server is not listening")
 
 type Server struct {
-	addr     string
+	cfg      config.NetworkConfig
 	listen   net.Listener
 	computer *compute.Computer
 }
 
-func NewServer(addr string, computer *compute.Computer) (*Server, error) {
-	server := Server{
-		addr:     addr,
-		computer: computer,
-	}
-
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+func NewServer(cfg config.NetworkConfig, computer *compute.Computer) (*Server, error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", cfg.Address)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve tcp addr: %s: %w", addr, err)
+		return nil, fmt.Errorf("failed to resolve tcp addr: %s: %w", cfg.Address, err)
 	}
 
 	listen, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start listening on addr: %s: %w", addr, err)
+		return nil, fmt.Errorf("failed to start listening on addr: %s: %w", cfg.Address, err)
 	}
 
-	server.listen = listen
-
-	return &server, nil
+	return &Server{
+		cfg:      cfg,
+		computer: computer,
+		listen:   listen,
+	}, nil
 }
 
 func (s *Server) Addr() (string, error) {
@@ -61,16 +59,6 @@ func (s *Server) Start() {
 
 		go s.handleClient(conn)
 	}
-}
-
-func (s *Server) Stop() error {
-	// TODO stop accepting connections
-	err := s.listen.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close tcp server: %w", err)
-	}
-
-	return nil
 }
 
 func (s *Server) handleClient(conn net.Conn) {
@@ -101,12 +89,14 @@ func (s *Server) handleClient(conn net.Conn) {
 		)
 
 		result, err := s.computer.Process(netData)
+		slog.Info("test", result, err)
 		if err != nil {
 			slog.Error(
 				"failed to process client query",
 				slog.String("error", err.Error()),
 			)
 
+			// TODO sometimes nothing is sent to client
 			_, err = conn.Write([]byte(fmt.Sprintf("error: %s\n", err)))
 			if err != nil {
 				slog.Error(

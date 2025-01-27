@@ -30,7 +30,7 @@ func main() {
 	kvEngine := engine.New()
 	computer := compute.NewComputer(kvEngine)
 
-	server, err := tcp.NewServer(cfg.Network.Address, computer)
+	server, err := tcp.NewServer(cfg.Network, computer)
 	if err != nil {
 		slog.Error(
 			"failed to start server",

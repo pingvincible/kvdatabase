@@ -63,6 +63,10 @@ func main() {
 			break
 		}
 
+		if text == "\n" {
+			continue
+		}
+
 		_, err = fmt.Fprintf(conn, "%s\n", text)
 		if err != nil {
 			slog.Error(
