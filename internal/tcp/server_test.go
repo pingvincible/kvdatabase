@@ -141,6 +141,7 @@ func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
 
 	clientWg.Wait()
 	assert.Equal(t, maxConnections, server.GetClients())
+
 	for _, client := range clients {
 		if client != nil {
 			_ = client.Close()

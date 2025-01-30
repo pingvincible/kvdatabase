@@ -128,6 +128,23 @@ func (s *Server) getClients() int {
 
 func (s *Server) handleClient(conn net.Conn) {
 	defer func() {
+		if v := recover(); v != nil {
+			slog.Error(
+				"captured panic: ",
+				slog.Any("panic", v),
+			)
+		}
+
+		err := conn.Close()
+		if err != nil {
+			s.logger.Error(
+				"failed to close client connection",
+				slog.String("error", err.Error()),
+			)
+		}
+	}()
+
+	defer func() {
 		s.mutex.Lock()
 		if s.clients > 0 {
 			s.clients--
