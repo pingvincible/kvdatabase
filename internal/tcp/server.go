@@ -129,7 +129,7 @@ func (s *Server) getClients() int {
 func (s *Server) handleClient(conn net.Conn) {
 	defer func() {
 		if v := recover(); v != nil {
-			slog.Error(
+			s.logger.Error(
 				"captured panic: ",
 				slog.Any("panic", v),
 			)

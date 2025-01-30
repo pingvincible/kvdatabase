@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	logger.Configure("debug")
-	slog.Info("KV CLI started")
+	kvLogger := logger.Configure("debug")
+	kvLogger.Info("KV CLI started")
 
 	var addr string
 
@@ -22,7 +22,7 @@ func main() {
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		slog.Error(
+		kvLogger.Error(
 			"failed to resolve tcp address",
 			slog.String("error", err.Error()),
 		)
@@ -31,7 +31,7 @@ func main() {
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		slog.Error(
+		kvLogger.Error(
 			"failed to connect to tcp address",
 			slog.String("error", err.Error()),
 		)
@@ -41,7 +41,7 @@ func main() {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
-			slog.Error(
+			kvLogger.Error(
 				"failed to close tcp connection",
 				slog.String("error", err.Error()),
 			)
@@ -55,7 +55,7 @@ func main() {
 
 		text, err := reader.ReadString('\n')
 		if err != nil {
-			slog.Error(
+			kvLogger.Error(
 				"failed to read line",
 				slog.String("error", err.Error()),
 			)
@@ -69,7 +69,7 @@ func main() {
 
 		_, err = fmt.Fprintf(conn, "%s\n", text)
 		if err != nil {
-			slog.Error(
+			kvLogger.Error(
 				"failed to send line to tcp server",
 				slog.String("error", err.Error()),
 			)
@@ -79,7 +79,7 @@ func main() {
 
 		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
-			slog.Error(
+			kvLogger.Error(
 				"failed to receive response from tcp server",
 				slog.String("error", err.Error()),
 			)

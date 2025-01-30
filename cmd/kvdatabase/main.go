@@ -26,14 +26,14 @@ func main() {
 
 	kvLogger := logger.Configure(cfg.Logging.Level)
 
-	slog.Info("KV database started")
+	kvLogger.Info("KV database started")
 
 	kvEngine := engine.New()
 	computer := compute.NewComputer(kvEngine)
 
 	server, err := tcp.NewServer(cfg.Network, computer, kvLogger)
 	if err != nil {
-		slog.Error(
+		kvLogger.Error(
 			"failed to start server",
 			slog.String("error", err.Error()),
 		)
@@ -42,13 +42,13 @@ func main() {
 
 	addr, err := server.Addr()
 	if err != nil {
-		slog.Error(
+		kvLogger.Error(
 			"failed to get server address",
 			slog.String("error", err.Error()),
 		)
 	}
 
-	slog.Info("tcp server started", slog.String("address", addr))
+	kvLogger.Info("tcp server started", slog.String("address", addr))
 
 	server.Start()
 }
