@@ -79,14 +79,19 @@ func TestTcpServerMaxConnectionsSequentially(t *testing.T) {
 
 	assert.Equal(t, maxConnections, server.ClientsHandled)
 	assert.Equal(t, 1, server.ClientsDiscarded)
+	assert.Equal(t, maxConnections, server.GetClients())
 
 	for _, client := range clients {
-		_ = client.Close()
+		if client != nil {
+			_ = client.Close()
+		}
 	}
 
 	_ = server.Stop()
 
 	wgServer.Wait()
+
+	assert.Equal(t, 0, server.GetClients())
 }
 
 func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
@@ -135,17 +140,18 @@ func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
 	}
 
 	clientWg.Wait()
-
-	_ = server.Stop()
-
-	wgServer.Wait()
-
+	assert.Equal(t, maxConnections, server.GetClients())
 	for _, client := range clients {
 		if client != nil {
 			_ = client.Close()
 		}
 	}
 
+	_ = server.Stop()
+
+	wgServer.Wait()
+
 	assert.Equal(t, maxConnections, server.ClientsHandled)
 	assert.Equal(t, overConnections, server.ClientsDiscarded)
+	assert.Equal(t, 0, server.GetClients())
 }

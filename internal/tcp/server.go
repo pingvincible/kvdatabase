@@ -181,6 +181,13 @@ func (s *Server) handleClient(conn net.Conn) {
 	}
 }
 
+func (s *Server) GetClients() int {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return s.clients
+}
+
 func (s *Server) increaseClients() bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
