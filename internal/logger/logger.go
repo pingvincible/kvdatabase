@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func Configure(level string) {
+func Configure(level string) *slog.Logger {
 	logLevel := &slog.LevelVar{}
 	opts := &slog.HandlerOptions{
 		AddSource: false,
@@ -24,4 +24,6 @@ func Configure(level string) {
 	default:
 		logLevel.Set(slog.LevelInfo)
 	}
+
+	return logger
 }

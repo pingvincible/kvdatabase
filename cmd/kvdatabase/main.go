@@ -24,13 +24,14 @@ func main() {
 	cfg.UpdateWithFlags(flags)
 	log.Printf("%+v", cfg)
 
-	logger.Configure(cfg.Logging.Level)
+	kvLogger := logger.Configure(cfg.Logging.Level)
+
 	slog.Info("KV database started")
 
 	kvEngine := engine.New()
 	computer := compute.NewComputer(kvEngine)
 
-	server, err := tcp.NewServer(cfg.Network, computer)
+	server, err := tcp.NewServer(cfg.Network, computer, kvLogger)
 	if err != nil {
 		slog.Error(
 			"failed to start server",

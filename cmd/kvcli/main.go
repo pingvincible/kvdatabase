@@ -51,7 +51,7 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Print(">> ")
+		fmt.Print(">> ") //nolint:forbidigo // logic code
 
 		text, err := reader.ReadString('\n')
 		if err != nil {
@@ -87,6 +87,6 @@ func main() {
 			break
 		}
 
-		fmt.Print("->: " + message)
+		fmt.Print("->: " + message) //nolint: forbidigo // logic code
 	}
 }

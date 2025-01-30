@@ -10,7 +10,7 @@ linters:
   disable:
     - depguard
     - exportloopref
-    - forbidigo
+#    - forbidigo
     - exhaustruct
     - godox
     - funlen
