@@ -99,7 +99,7 @@ func (s *Server) Run() {
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
-	if ok := incrementWithLimit(&s.clients, int32(s.cfg.MaxConnections)); ok {
+	if ok := incrementWithLimit(&s.clients, int32(s.cfg.MaxConnections)); ok { //nolint: gosec // under control
 		s.wgClients.Add(1)
 
 		go s.handleClient(conn)

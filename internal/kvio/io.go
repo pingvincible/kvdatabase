@@ -2,6 +2,7 @@ package kvio
 
 import (
 	"bufio"
+	"fmt"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ func NewReadWriter(reader *bufio.Reader, writer *bufio.Writer) *ReadWriter {
 func (r *ReadWriter) ReadLine() (string, error) {
 	text, err := r.readWriter.ReadString('\n')
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read string: %w", err)
 	}
 
 	return text, nil
@@ -29,7 +30,7 @@ func (r *ReadWriter) Write(text string) error {
 
 	err := r.write(text)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write: %w", err)
 	}
 
 	return nil
@@ -40,7 +41,7 @@ func (r *ReadWriter) WriteLine(text string) error {
 
 	err := r.write(text + "\n")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write: %w", err)
 	}
 
 	return nil
@@ -49,12 +50,12 @@ func (r *ReadWriter) WriteLine(text string) error {
 func (r *ReadWriter) write(text string) error {
 	_, err := r.readWriter.WriteString(text)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write string: %w", err)
 	}
 
 	err = r.readWriter.Flush()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to flush: %w", err)
 	}
 
 	return nil

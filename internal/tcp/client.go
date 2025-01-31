@@ -33,7 +33,7 @@ func NewClient(addr string) (*Client, error) {
 func (c *Client) Close() error {
 	err := c.conn.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to close tcp connection: %w", err)
 	}
 
 	return nil

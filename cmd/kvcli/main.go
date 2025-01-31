@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -32,7 +33,6 @@ func main() {
 	consoleReadWriter := kvio.NewReadWriter(bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout))
 
 	err = Run(consoleReadWriter, client.ReadWriter)
-	err = client.Close()
 	if err != nil {
 		kvLogger.Error(
 			"failed to run",
@@ -47,20 +47,18 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 	}
-
-	return
 }
 
 func Run(consoleReadWriter *kvio.ReadWriter, clientReadWriter *kvio.ReadWriter) error {
 	for {
 		err := consoleReadWriter.Write(">>")
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to write to console: %w", err)
 		}
 
 		request, err := consoleReadWriter.ReadLine()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read from console: %w", err)
 		}
 
 		if request == "\n" {
@@ -73,17 +71,17 @@ func Run(consoleReadWriter *kvio.ReadWriter, clientReadWriter *kvio.ReadWriter) 
 
 		err = clientReadWriter.WriteLine(request)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to write to server: %w", err)
 		}
 
 		response, err := clientReadWriter.ReadLine()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read from server: %w", err)
 		}
 
 		err = consoleReadWriter.WriteLine("->: " + response)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to write to console: %w", err)
 		}
 	}
 }
