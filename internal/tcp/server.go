@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pingvincible/kvdatabase/internal/compute"
@@ -23,10 +24,8 @@ type Server struct {
 	ClientsDiscarded int
 	logger           *slog.Logger
 
-	isListening bool
-
-	mutex   sync.Mutex
-	clients int
+	wgClients sync.WaitGroup
+	clients   atomic.Int32
 }
 
 func NewServer(
@@ -45,16 +44,12 @@ func NewServer(
 	}
 
 	server := &Server{
-		cfg:      cfg,
-		logger:   logger,
-		computer: computer,
-		listen:   listen,
-		clients:  0,
+		cfg:       cfg,
+		logger:    logger,
+		computer:  computer,
+		listen:    listen,
+		wgClients: sync.WaitGroup{},
 	}
-
-	server.mutex.Lock()
-	server.isListening = true
-	server.mutex.Unlock()
 
 	return server, nil
 }
@@ -67,26 +62,25 @@ func (s *Server) Addr() (string, error) {
 	return s.listen.Addr().String(), nil
 }
 
-func (s *Server) Start() {
+func (s *Server) Run() {
 	for {
-		s.mutex.Lock()
-		if !s.isListening {
-			s.mutex.Unlock()
-
-			break
-		}
-		s.mutex.Unlock()
-
-		clients := s.getClients()
-
 		s.logger.Info(
 			"waiting for client",
-			slog.Int("clients connected", clients),
+			slog.Int("clients connected", int(s.clients.Load())),
 			slog.Int("max connections", s.cfg.MaxConnections),
 		)
 
 		conn, err := s.listen.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				s.logger.Error(
+					"listener was closed",
+					slog.String("error", err.Error()),
+				)
+
+				return
+			}
+
 			s.logger.Error(
 				"failed to accept connection",
 				slog.String("error", err.Error()),
@@ -99,34 +93,35 @@ func (s *Server) Start() {
 			continue
 		}
 
-		if ok := s.increaseClients(); ok {
-			go s.handleClient(conn)
+		s.handleConnection(conn)
+	}
+}
 
-			s.ClientsHandled++
-		} else {
-			s.ClientsDiscarded++
+func (s *Server) handleConnection(conn net.Conn) {
+	if ok := incrementWithLimit(&s.clients, int32(s.cfg.MaxConnections)); ok {
+		s.wgClients.Add(1)
 
-			s.logger.Info("failed to handle client, too many connections")
+		go s.handleClient(conn)
 
-			err = conn.Close()
-			if err != nil {
-				s.logger.Error(
-					"failed to close client connection",
-					slog.String("error", err.Error()),
-				)
-			}
+		s.ClientsHandled++
+	} else {
+		s.ClientsDiscarded++
+
+		s.logger.Info("failed to handle client, too many connections")
+
+		err := conn.Close()
+		if err != nil {
+			s.logger.Error(
+				"failed to close client connection",
+				slog.String("error", err.Error()),
+			)
 		}
 	}
 }
 
-func (s *Server) getClients() int {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	return s.clients
-}
-
 func (s *Server) handleClient(conn net.Conn) {
+	defer s.wgClients.Done()
+
 	defer func() {
 		if v := recover(); v != nil {
 			s.logger.Error(
@@ -145,11 +140,8 @@ func (s *Server) handleClient(conn net.Conn) {
 	}()
 
 	defer func() {
-		s.mutex.Lock()
-		if s.clients > 0 {
-			s.clients--
-		}
-		s.mutex.Unlock()
+		s.logger.Info("closing client connection")
+		s.clients.Add(-1)
 
 		err := conn.Close()
 		if err != nil {
@@ -198,37 +190,32 @@ func (s *Server) handleClient(conn net.Conn) {
 	}
 }
 
-func (s *Server) GetClients() int {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	return s.clients
-}
-
-func (s *Server) increaseClients() bool {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if s.clients < s.cfg.MaxConnections {
-		s.clients++
-
-		return true
-	}
-
-	return false
+func (s *Server) GetClients() int32 {
+	return s.clients.Load()
 }
 
 func (s *Server) Stop() error {
-	defer func() {
-		s.mutex.Lock()
-		s.isListening = false
-		s.mutex.Unlock()
-	}()
-
 	err := s.listen.Close()
 	if err != nil {
 		return fmt.Errorf("failed to stop server: %w", err)
 	}
 
+	s.wgClients.Wait()
+
 	return nil
+}
+
+func incrementWithLimit(value *atomic.Int32, limit int32) bool {
+	for {
+		currentValue := value.Load()
+		if currentValue >= limit {
+			return false
+		}
+
+		nextValue := currentValue + 1
+
+		if value.CompareAndSwap(currentValue, nextValue) {
+			return true
+		}
+	}
 }

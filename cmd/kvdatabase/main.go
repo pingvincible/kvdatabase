@@ -50,7 +50,7 @@ func main() {
 
 	kvLogger.Info("tcp server started", slog.String("address", addr))
 
-	server.Start()
+	server.Run()
 }
 
 func handleFlags(cfg *config.Config) config.Flags {

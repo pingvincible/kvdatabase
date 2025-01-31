@@ -2,6 +2,7 @@ package tcp_test
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"sync"
 	"testing"
@@ -40,7 +41,7 @@ func executeClient(tcpAddr *net.TCPAddr, text string) (*net.TCPConn, error) {
 func TestTcpServerMaxConnectionsSequentially(t *testing.T) {
 	t.Parallel()
 
-	const maxConnections = 50
+	const maxConnections = 500
 
 	eng := engine.New()
 	computer := compute.NewComputer(eng)
@@ -61,7 +62,7 @@ func TestTcpServerMaxConnectionsSequentially(t *testing.T) {
 
 	go func() {
 		defer wgServer.Done()
-		server.Start()
+		server.Run()
 	}()
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -79,7 +80,7 @@ func TestTcpServerMaxConnectionsSequentially(t *testing.T) {
 
 	assert.Equal(t, maxConnections, server.ClientsHandled)
 	assert.Equal(t, 1, server.ClientsDiscarded)
-	assert.Equal(t, maxConnections, server.GetClients())
+	assert.Equal(t, int32(maxConnections), server.GetClients())
 
 	for _, client := range clients {
 		if client != nil {
@@ -90,15 +91,13 @@ func TestTcpServerMaxConnectionsSequentially(t *testing.T) {
 	_ = server.Stop()
 
 	wgServer.Wait()
-
-	assert.Equal(t, 0, server.GetClients())
+	assert.Equal(t, int32(0), server.GetClients())
 }
 
 func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
 	t.Parallel()
 
-	// FIXME if maxConnections > 100, when all tests run together, they fail
-	const maxConnections = 50
+	const maxConnections = 500
 
 	const overConnections = 20
 
@@ -120,7 +119,7 @@ func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
 
 	go func() {
 		defer wgServer.Done()
-		server.Start()
+		server.Run()
 	}()
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -140,7 +139,7 @@ func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
 	}
 
 	clientWg.Wait()
-	assert.Equal(t, maxConnections, server.GetClients())
+	assert.Equal(t, int32(maxConnections), server.GetClients())
 
 	for _, client := range clients {
 		if client != nil {
@@ -154,5 +153,40 @@ func TestTcpServerMaxConnectionsConcurrently(t *testing.T) {
 
 	assert.Equal(t, maxConnections, server.ClientsHandled)
 	assert.Equal(t, overConnections, server.ClientsDiscarded)
-	assert.Equal(t, 0, server.GetClients())
+	assert.Equal(t, int32(0), server.GetClients())
+}
+
+func TestTcpServerStopWhileWaitingForAccept(t *testing.T) {
+	t.Parallel()
+
+	const maxConnections = 500
+
+	eng := engine.New()
+	computer := compute.NewComputer(eng)
+
+	server, err := tcp.NewServer(config.NetworkConfig{
+		Address:        "",
+		MaxConnections: maxConnections,
+		MaxMessageSize: "1KB",
+		IdleTimeout:    2 * time.Minute,
+	}, computer, slog.Default())
+	require.NoError(t, err)
+
+	_, err = server.Addr()
+	require.NoError(t, err)
+
+	wgServer := sync.WaitGroup{}
+	wgServer.Add(1)
+
+	go func() {
+		defer wgServer.Done()
+		server.Run()
+	}()
+
+	time.Sleep(time.Second)
+
+	err = server.Stop()
+	require.NoError(t, err)
+
+	wgServer.Wait()
 }
