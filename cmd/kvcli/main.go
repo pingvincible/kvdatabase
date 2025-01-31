@@ -3,12 +3,12 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"log/slog"
-	"net"
 	"os"
 
+	"github.com/pingvincible/kvdatabase/internal/kvio"
 	"github.com/pingvincible/kvdatabase/internal/logger"
+	"github.com/pingvincible/kvdatabase/internal/tcp"
 )
 
 func main() {
@@ -20,73 +20,70 @@ func main() {
 	flag.StringVar(&addr, "hostname", "localhost:3223", "address to connect to")
 	flag.Parse()
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	client, err := tcp.NewClient(addr)
 	if err != nil {
 		kvLogger.Error(
-			"failed to resolve tcp address",
+			"failed to create tcp client",
 			slog.String("error", err.Error()),
 		)
 		os.Exit(1)
 	}
 
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	consoleReadWriter := kvio.NewReadWriter(bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout))
+
+	err = Run(consoleReadWriter, client.ReadWriter)
+	err = client.Close()
 	if err != nil {
 		kvLogger.Error(
-			"failed to connect to tcp address",
+			"failed to run",
 			slog.String("error", err.Error()),
 		)
-		os.Exit(1)
 	}
 
-	defer func() {
-		err := conn.Close()
-		if err != nil {
-			kvLogger.Error(
-				"failed to close tcp connection",
-				slog.String("error", err.Error()),
-			)
-		}
-	}()
+	err = client.Close()
+	if err != nil {
+		kvLogger.Error(
+			"failed to close tcp client",
+			slog.String("error", err.Error()),
+		)
+	}
 
-	reader := bufio.NewReader(os.Stdin)
+	return
+}
 
+func Run(consoleReadWriter *kvio.ReadWriter, clientReadWriter *kvio.ReadWriter) error {
 	for {
-		fmt.Print(">> ") //nolint:forbidigo // logic code
-
-		text, err := reader.ReadString('\n')
+		err := consoleReadWriter.Write(">>")
 		if err != nil {
-			kvLogger.Error(
-				"failed to read line",
-				slog.String("error", err.Error()),
-			)
-
-			break
+			return err
 		}
 
-		if text == "\n" {
+		request, err := consoleReadWriter.ReadLine()
+		if err != nil {
+			return err
+		}
+
+		if request == "\n" {
 			continue
 		}
 
-		_, err = fmt.Fprintf(conn, "%s\n", text)
-		if err != nil {
-			kvLogger.Error(
-				"failed to send line to tcp server",
-				slog.String("error", err.Error()),
-			)
-
-			break
+		if request == "Q\n" {
+			return nil
 		}
 
-		message, err := bufio.NewReader(conn).ReadString('\n')
+		err = clientReadWriter.WriteLine(request)
 		if err != nil {
-			kvLogger.Error(
-				"failed to receive response from tcp server",
-				slog.String("error", err.Error()),
-			)
-
-			break
+			return err
 		}
 
-		fmt.Print("->: " + message) //nolint: forbidigo // logic code
+		response, err := clientReadWriter.ReadLine()
+		if err != nil {
+			return err
+		}
+
+		err = consoleReadWriter.WriteLine("->: " + response)
+		if err != nil {
+			return err
+		}
 	}
 }

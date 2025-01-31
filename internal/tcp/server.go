@@ -12,6 +12,7 @@ import (
 
 	"github.com/pingvincible/kvdatabase/internal/compute"
 	"github.com/pingvincible/kvdatabase/internal/config"
+	"github.com/pingvincible/kvdatabase/internal/kvio"
 )
 
 var ErrServerIsNotListening = errors.New("server is not listening")
@@ -152,15 +153,17 @@ func (s *Server) handleClient(conn net.Conn) {
 		}
 	}()
 
+	readerWriter := kvio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+
 	for {
-		netData, err := bufio.NewReader(conn).ReadString('\n')
+		netData, err := readerWriter.ReadLine()
 		if err != nil {
 			s.logger.Error(
 				"failed to read data from tcp client",
 				slog.String("error", err.Error()),
 			)
 
-			return
+			break
 		}
 
 		s.logger.Info(
@@ -175,17 +178,17 @@ func (s *Server) handleClient(conn net.Conn) {
 				slog.String("error", err.Error()),
 			)
 
-			response = fmt.Sprintf("error: %s\n", err)
+			response = fmt.Sprintf("error: %s", err)
 		}
 
-		_, err = conn.Write([]byte(response + "\n"))
+		err = readerWriter.WriteLine(response)
 		if err != nil {
 			s.logger.Error(
 				"failed to send data to client",
 				slog.String("error", err.Error()),
 			)
 
-			return
+			break
 		}
 	}
 }
